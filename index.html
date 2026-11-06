@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The IR Reading Room</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0000EE">
+<meta name="description" content="John's old-fashioned reading room for International Relations articles — search 250 million academic works in five languages, free full text or everything, translate and email what you find.">
+<style>
+  /* ============ OLD-SCHOOL TOKENS ============ */
+  :root {
+    --ink: #000000;
+    --link: #0000EE;
+    --visited: #551A8B;
+    --green: #008000;
+    --gray: #666666;
+    --rule: #bbbbbb;
+    --bg: #ffffff;
+    --panel: #f7f7f7;
+    --btnface: #f0f0f0;
+    --accent: #0000EE;
+    --danger: #cc0000;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: Georgia, "Times New Roman", Times, serif;
+    font-size: 16px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--link); text-decoration: underline; cursor: pointer; }
+  a:visited { color: var(--visited); }
+  a:hover { color: var(--danger); }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 14px 18px 90px; }
+
+  /* ============ MASTHEAD ============ */
+  #masthead { text-align: center; padding: 26px 0 10px; }
+  #masthead .over { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--gray); }
+  #masthead h1 {
+    margin: 8px 0 2px; font-family: Georgia, serif; font-size: 34px;
+    font-weight: 700; letter-spacing: .01em;
+  }
+  #masthead h1 .the { font-style: italic; font-weight: 400; }
+  #masthead .tagline { font-style: italic; color: var(--gray); margin: 0 0 6px; }
+  #masthead .dateline { font-size: 13px; color: var(--gray); }
+  #masthead .dateline a { font-size: 13px; }
+  hr.rule { border: none; border-top: 1px solid var(--rule); margin: 14px 0; }
+  hr.rule.heavy { border-top: 3px double var(--rule); }
+
+  /* ============ SEARCH FORM ============ */
+  #searchForm { margin: 18px 0 6px; }
+  #searchBox { display: flex; gap: 8px; }
+  #q {
+    flex: 1; min-width: 0; font: 18px Georgia, serif; padding: 9px 10px;
+    border: 2px inset #cccccc; background: #fff; color: #000; outline: none;
+  }
+  #q:focus { border-color: #0000EE; }
+  .btn {
+    font: 13px Arial, sans-serif; padding: 8px 18px; cursor: pointer;
+    background: var(--btnface); color: #000;
+    border: 2px outset #ffffff; border-radius: 0;
+  }
+  .btn:active { border-style: inset; }
+  .btn.big { font-size: 15px; padding: 9px 26px; }
+  .btn.blue { background: var(--link); color: #ffffff; border: 2px outset #3333ff; font-weight: 700; }
+  .btn.blue:active { border-style: inset; }
+
+  /* ============ FILTERS ============ */
+  #filters {
+    border: 1px solid var(--rule); background: var(--panel);
+    padding: 12px 14px 10px; margin: 12px 0 0;
+  }
+  #filters .fRow { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: center; font-size: 14px; }
+  #filters .fRow + .fRow { margin-top: 8px; }
+  #filters .fl { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+  #filters label { cursor: pointer; }
+  #filters select, #filters input[type="number"] {
+    font: 14px Georgia, serif; border: 1px inset #cccccc; background: #fff;
+    padding: 3px 5px; color: #000; max-width: 180px;
+  }
+  #filters input[type="number"] { width: 84px; }
+  .fine { font-size: 12px; color: var(--gray); font-style: italic; }
+
+  /* ============ TOPIC CHIPS ============ */
+  #chips { margin: 12px 0 2px; font-size: 13px; color: var(--gray); }
+  #chips a { margin-right: 10px; white-space: nowrap; }
+
+  /* ============ SETTINGS ============ */
+  #settingsBox { display: none; border: 1px solid var(--rule); background: var(--panel); padding: 12px 14px; margin: 10px 0 0; font-size: 14px; }
+  #settingsBox.on { display: block; }
+  #settingsBox .sRow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  #settingsBox input {
+    font: 14px Georgia, serif; border: 1px inset #cccccc; background: #fff; padding: 4px 6px; flex: 1; min-width: 170px;
+  }
+  #settingsBox .fl { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+
+  /* ============ STATUS LINE ============ */
+  #statusLine { text-align: center; font-size: 14px; color: var(--gray); padding: 10px 0 0; display: none; }
+
+  /* ============ RESULTS ============ */
+  #stats { font-size: 13px; color: var(--gray); margin: 16px 0 4px; }
+  #suggest { font-size: 13px; margin: 6px 0 0; }
+  #suggest .lab { color: var(--gray); font-style: italic; }
+  .result { margin: 18px 0 22px; }
+  .result h3 { margin: 0 0 2px; font-size: 17px; font-weight: 400; line-height: 1.35; }
+  .result h3 a { text-decoration: underline; }
+  .result .cite { font-size: 13.5px; }
+  .result .cite i { font-style: italic; }
+  .result .url { font-size: 13px; color: var(--green); margin: 1px 0 4px; word-break: break-all; }
+  .result .snippet { font-size: 14px; margin: 0; }
+  .result .snippet.more { display: none; }
+  .result.open .snippet.more { display: inline; }
+  .result .actions { font-size: 13px; margin-top: 4px; font-family: Arial, sans-serif; }
+  .result .actions a, .result .actions button.linklike {
+    font-family: Arial, sans-serif; font-size: 13px; margin-right: 14px;
+    background: none; border: none; padding: 0; cursor: pointer; text-decoration: underline;
+  }
+  .result .actions a:visited, .result .actions button.linklike:visited { color: var(--link); }
+  .badge { font-family: Arial, sans-serif; font-size: 11.5px; border: 1px solid var(--rule); padding: 1px 6px; border-radius: 2px; color: var(--gray); white-space: nowrap; }
+  .badge.oa { color: #0a7a0a; border-color: #0a7a0a; }
+  .badge.closed { color: #a05000; border-color: #a05000; }
+  .selbox { vertical-align: middle; margin-right: 6px; }
+  .pickline { font-family: Arial, sans-serif; font-size: 12.5px; color: var(--gray); margin-top: 4px; }
+
+  /* ============ ERROR ============ */
+  #errBox { display: none; border: 2px solid var(--danger); background: #fff4f4; padding: 14px 16px; margin: 16px 0; font-size: 14px; }
+  #errBox.on { display: block; }
+
+  /* ============ PAGER ============ */
+  #pager { text-align: center; margin: 26px 0 8px; font-size: 15px; }
+  #pager span.cur { font-weight: 700; margin: 0 7px; }
+  #pager a { margin: 0 7px; }
+
+  /* ============ BASKET ============ */
+  #basket {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    background: var(--bg); border-top: 3px double var(--rule);
+    padding: 9px 14px; display: none;
+    font-family: Arial, sans-serif; font-size: 13.5px;
+  }
+  #basket.on { display: block; }
+  #basket .inner { max-width: 900px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+  #basket .cnt { font-weight: 700; }
+  #basket .hint { color: var(--gray); font-size: 12px; flex-basis: 100%; }
+  .btn.sm { font-size: 12px; padding: 5px 10px; border-width: 1px; }
+
+  /* ============ COPY MODAL ============ */
+  #copyModal { display: none; position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.35); padding: 20px; }
+  #copyModal.on { display: flex; align-items: center; justify-content: center; }
+  #copyModal .card { background: #fff; border: 2px solid var(--ink); padding: 16px; width: min(720px, 100%); }
+  #copyModal textarea { width: 100%; height: 220px; font: 13px/1.5 Consolas, monospace; border: 1px inset #ccc; }
+  #copyModal .foot { margin-top: 10px; text-align: right; }
+
+  /* ============ FOOTER ============ */
+  #foot { text-align: center; font-size: 12.5px; color: var(--gray); margin-top: 34px; }
+  #foot hr { border: none; border-top: 1px solid var(--rule); width: 220px; margin: 14px auto; }
+
+  @media (max-width: 640px) {
+    #masthead h1 { font-size: 26px; }
+    #searchBox { flex-wrap: wrap; }
+    #filters .fRow { gap: 6px 14px; }
+  }
+  @media print {
+    #filters, #chips, #searchForm, #basket, #pager, .result .actions, .pickline { display: none !important; }
+    .wrap { padding-bottom: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="masthead">
+    <div class="over">Vol. I &nbsp;·&nbsp; No. 1 &nbsp;·&nbsp; A Private Library</div>
+    <h1><span class="the">The</span> IR Reading Room</h1>
+    <p class="tagline">International Relations articles, the old-fashioned way — for John's desk.</p>
+    <p class="dateline">
+      <span id="dateline">—</span> &nbsp;·&nbsp;
+      <a id="settingsToggle" title="Your email &amp; settings are stored only in this browser">⚙ Settings</a>
+    </p>
+  </div>
+
+  <hr class="rule heavy">
+
+  <div id="settingsBox">
+    <div class="sRow"><span class="fl">Your email</span><input id="emailInput" type="email" placeholder="where article lists should be sent" autocomplete="off"></div>
+    <div class="sRow"><span class="fl">OpenAlex key</span><input id="apiKeyInput" type="text" placeholder="optional — free personal key if you ever see 'library busy' messages" autocomplete="off"></div>
+    <div class="sRow">
+      <button class="btn sm" id="saveSettings" type="button">Save settings</button>
+      <span class="fine">Stored only on this device. A free key can be requested at openalex.org — it makes searches more reliable.</span>
+    </div>
+  </div>
+
+  <form id="searchForm" onsubmit="return false;">
+    <div id="searchBox">
+      <input id="q" type="text" placeholder="Type a topic…  e.g.  tribute system East Asia   ·   décolonisation   ·   朝贡体系" spellcheck="false" autocomplete="off">
+      <button class="btn big blue" id="searchBtn" type="submit">Search</button>
+    </div>
+  </form>
+
+  <div id="filters">
+    <div class="fRow">
+      <span class="fl">Access</span>
+      <label><input type="radio" name="access" id="accessAll" checked> All articles</label>
+      <label><input type="radio" name="access" id="accessFree"> Readily available (free full text only)</label>
+    </div>
+    <div class="fRow">
+      <span class="fl">Language</span>
+      <select id="langSel">
+        <option value="">Any language — search everything</option>
+        <option value="en">English</option>
+        <option value="fr">Français — French</option>
+        <option value="de">Deutsch — German</option>
+        <option value="ru">Русский — Russian</option>
+        <option value="zh">中文 — Chinese</option>
+      </select>
+      <span class="fl">Sort</span>
+      <select id="sortSel">
+        <option value="relevance">Relevance</option>
+        <option value="newest">Newest first</option>
+        <option value="cited">Most cited</option>
+      </select>
+    </div>
+    <div class="fRow">
+      <label><input type="checkbox" id="irScope" checked> International relations &amp; political science only</label>
+      <label><input type="checkbox" id="journalOnly"> Journal articles only</label>
+      <span class="fl">From year</span>
+      <input type="number" id="fromYear" min="1600" max="2027" placeholder="any">
+    </div>
+  </div>
+
+  <div id="chips">
+    From John's shelf:
+    <a data-q="East Asian international relations">East Asian IR</a>
+    <a data-q="tribute system">the tribute system</a>
+    <a data-q="semi-colonial China">semi-colonial China</a>
+    <a data-q="colonialism decolonization empire">colonialism &amp; decolonization</a>
+    <a data-q="Cold War origins">the Cold War</a>
+    <a data-q="climate change international security">climate &amp; security</a>
+    <a data-q="balance of power">balance of power</a>
+    <a data-q="hegemony international order">hegemony &amp; world order</a>
+  </div>
+
+  <div id="statusLine">Searching the stacks…</div>
+  <div id="errBox"></div>
+  <div id="stats"></div>
+  <div id="suggest"></div>
+  <div id="results"></div>
+  <div id="pager"></div>
+
+  <div id="foot">
+    <hr>
+    The IR Reading Room searches the <a href="https://openalex.org" target="_blank" rel="noopener">OpenAlex</a> catalogue of 250&nbsp;million scholarly works.
+    <br>Requests go straight from your browser to the library index — nothing about your reading is stored anywhere else.
+    <br><span class="fine" id="verline">The IR Reading Room · v1 · everything stays on this device</span>
+  </div>
+</div>
+
+<div id="basket">
+  <div class="inner">
+    <span class="cnt">📚 Reading list: <span id="basketCount">0</span> article(s)</span>
+    <button class="btn sm blue" id="vibeBtn" type="button" title="Download a small file — attach it in your Vibe chat and ask for the PDFs by email">✉ Email via Vibe</button>
+    <button class="btn sm" id="mailtoBtn" type="button" title="Open your own mail app with the list ready to send">✉ Open mail draft</button>
+    <button class="btn sm" id="copyBtn" type="button">⧉ Copy list</button>
+    <button class="btn sm" id="clearBtn" type="button">Clear</button>
+    <span class="hint">"Email via Vibe" downloads your selection — attach that file in the Vibe chat and ask Vibe to fetch the articles and email them to you as PDFs. "Open mail draft" uses your own mail app and includes every link (free PDFs included).</span>
+  </div>
+</div>
+
+<div id="copyModal">
+  <div class="card">
+    <p style="margin:0 0 8px;font-weight:700">Your reading list — select all and copy:</p>
+    <textarea id="copyArea" readonly></textarea>
+    <div class="foot"><button class="btn sm" id="copyClose" type="button">Close</button></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+(function () {
+  /* ================= state & storage ================= */
+  var API = "https://api.openalex.org/works";
+  var PER_PAGE = 20;
+  var MAX_PAGES = 50;
+  var IR_CONCEPT = "C34355311"; /* OpenAlex concept: International relations */
+  var LANG_NAMES = { en: "English", fr: "French", de: "German", ru: "Russian", zh: "Chinese", es: "Spanish", pt: "Portuguese", it: "Italian", ja: "Japanese", ko: "Korean", ar: "Arabic", nl: "Dutch", pl: "Polish", tr: "Turkish", hi: "Hindi", id: "Indonesian", uk: "Ukrainian", sv: "Swedish", fi: "Finnish", da: "Danish", no: "Norwegian", cs: "Czech", grc: "Ancient Greek", la: "Latin" };
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+    del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+
+  var settings = { email: "", apiKey: "" };
+  var basket = {};           /* id -> item */
+  var state = { query: "", page: 1, count: 0, ms: 0, lastFilters: null };
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+
+  /* ================= IR mini-glossary (EN -> FR/DE/RU/ZH) ================= */
+  var GLOSS = {
+    "war": { fr: "guerre", de: "Krieg", ru: "война", zh: "战争" },
+    "peace": { fr: "paix", de: "Frieden", ru: "мир", zh: "和平" },
+    "security": { fr: "sécurité", de: "Sicherheit", ru: "безопасность", zh: "安全" },
+    "power": { fr: "puissance", de: "Macht", ru: "власть", zh: "权力" },
+    "sovereignty": { fr: "souveraineté", de: "Souveränität", ru: "суверенитет", zh: "主权" },
+    "empire": { fr: "empire", de: "Imperium", ru: "империя", zh: "帝国" },
+    "imperialism": { fr: "impérialisme", de: "Imperialismus", ru: "империализм", zh: "帝国主义" },
+    "colonialism": { fr: "colonialisme", de: "Kolonialismus", ru: "колониализм", zh: "殖民主义" },
+    "decolonization": { fr: "décolonisation", de: "Dekolonisation", ru: "деколонизация", zh: "非殖民化" },
+    "diplomacy": { fr: "diplomatie", de: "Diplomatie", ru: "дипломатия", zh: "外交" },
+    "alliance": { fr: "alliance", de: "Allianz", ru: "союз", zh: "同盟" },
+    "sanctions": { fr: "sanctions", de: "Sanktionen", ru: "санкции", zh: "制裁" },
+    "trade": { fr: "commerce", de: "Handel", ru: "торговля", zh: "贸易" },
+    "hegemony": { fr: "hégémonie", de: "Hegemonie", ru: "гегемония", zh: "霸权" },
+    "nationalism": { fr: "nationalisme", de: "Nationalismus", ru: "национализм", zh: "民族主义" },
+    "revolution": { fr: "révolution", de: "Revolution", ru: "революция", zh: "革命" },
+    "deterrence": { fr: "dissuasion", de: "Abschreckung", ru: "сдерживание", zh: "威慑" },
+    "nuclear": { fr: "nucléaire", de: "nuklear", ru: "ядерное оружие", zh: "核武器" },
+    "united nations": { fr: "Nations unies", de: "Vereinte Nationen", ru: "ООН", zh: "联合国" },
+    "human rights": { fr: "droits de l'homme", de: "Menschenrechte", ru: "права человека", zh: "人权" },
+    "migration": { fr: "migration", de: "Migration", ru: "миграция", zh: "移民" },
+    "climate change": { fr: "changement climatique", de: "Klimawandel", ru: "изменение климата", zh: "气候变化" },
+    "balance of power": { fr: "équilibre des puissances", de: "Mächtegleichgewicht", ru: "баланс сил", zh: "均势" },
+    "international order": { fr: "ordre international", de: "internationale Ordnung", ru: "международный порядок", zh: "国际秩序" },
+    "tribute system": { fr: "système tributaire", de: "Tributsystem", ru: "данническая система", zh: "朝贡体系" },
+    "tribute": { fr: "tribut", de: "Tribut", ru: "дань", zh: "朝贡" },
+    "cold war": { fr: "guerre froide", de: "Kalter Krieg", ru: "холодная война", zh: "冷战" }
+  };
+  var LANG_LABEL = { fr: "French", de: "German", ru: "Russian", zh: "Chinese" };
+
+  /* ================= settings ================= */
+  function loadSettings() {
+    var raw = store.get("irr-settings", null);
+    if (raw) { try { settings = JSON.parse(raw); } catch (e) {} }
+    if (!settings) settings = { email: "", apiKey: "" };
+    if (!settings.email) settings.email = "";
+    if (!settings.apiKey) settings.apiKey = "";
+    $("emailInput").value = settings.email;
+    $("apiKeyInput").value = settings.apiKey;
+  }
+  function saveSettings() {
+    settings.email = $("emailInput").value.trim();
+    settings.apiKey = $("apiKeyInput").value.trim();
+    store.set("irr-settings", JSON.stringify(settings));
+    status("Settings saved" + (settings.email ? " — lists will go to " + settings.email : ""), 2600);
+  }
+
+  /* ================= basket ================= */
+  function loadBasket() {
+    var raw = store.get("irr-basket", null);
+    if (raw) { try { basket = JSON.parse(raw); } catch (e) { basket = {}; } }
+    renderBasket();
+  }
+  function persistBasket() { store.set("irr-basket", JSON.stringify(basket)); renderBasket(); }
+  function basketItems() {
+    var arr = [];
+    for (var k in basket) if (Object.prototype.hasOwnProperty.call(basket, k)) arr.push(basket[k]);
+    return arr;
+  }
+  function toggleSelect(id, item) {
+    if (basket[id]) { delete basket[id]; status("Removed from your reading list", 1800); }
+    else { basket[id] = item; status("Added to your reading list ✓", 1800); }
+    persistBasket();
+    var cb = document.querySelector('input[data-selid="' + id + '"]');
+    if (cb) cb.checked = !!basket[id];
+  }
+  function renderBasket() {
+    var n = basketItems().length;
+    $("basketCount").textContent = n;
+    $("basket").className = n ? "on" : "";
+    var boxes = document.querySelectorAll("input[data-selid]");
+    for (var i = 0; i < boxes.length; i++) boxes[i].checked = !!basket[boxes[i].getAttribute("data-selid")];
+  }
+
+  /* ================= status line ================= */
+  var statusTimer = null;
+  function status(msg, ms) {
+    var el = $("statusLine");
+    if (!msg) { el.style.display = "none"; return; }
+    el.textContent = msg;
+    el.style.display = "block";
+    if (statusTimer) clearTimeout(statusTimer);
+    if (ms) statusTimer = setTimeout(function () { el.style.display = "none"; }, ms);
+  }
+
+  /* ================= OpenAlex request ================= */
+  function currentFilters() {
+    return {
+      oaOnly: $("accessFree").checked,
+      lang: $("langSel").value,
+      irScope: $("irScope").checked,
+      journalOnly: $("journalOnly").checked,
+      fromYear: parseInt($("fromYear").value, 10) || null,
+      sort: $("sortSel").value
+    };
+  }
+  function buildUrl(page, f) {
+    var filters = [];
+    if (f.oaOnly) filters.push("is_oa:true");
+    if (f.lang) filters.push("language:" + f.lang);
+    if (f.irScope) filters.push("concepts.id:" + IR_CONCEPT);
+    if (f.journalOnly) filters.push("primary_location.source.type:journal");
+    if (f.fromYear) filters.push("from_publication_date:" + f.fromYear + "-01-01");
+    var p = new URLSearchParams();
+    p.set("search", state.query);
+    p.set("per-page", String(PER_PAGE));
+    p.set("page", String(page));
+    if (filters.length) p.set("filter", filters.join(","));
+    if (f.sort === "newest") p.set("sort", "publication_date:desc");
+    else if (f.sort === "cited") p.set("sort", "cited_by_count:desc");
+    if (settings.apiKey) p.set("api_key", settings.apiKey);
+    if (settings.email) p.set("mailto", settings.email);
+    return API + "?" + p.toString();
+  }
+
+  function abstractOf(w) {
+    var inv = w.abstract_inverted_index;
+    if (!inv) return "";
+    var arr = [];
+    for (var word in inv) {
+      if (!Object.prototype.hasOwnProperty.call(inv, word)) continue;
+      var pos = inv[word];
+      for (var i = 0; i < pos.length; i++) arr[pos[i]] = word;
+    }
+    var out = [];
+    for (var j = 0; j < arr.length; j++) out.push(arr[j] || "");
+    return out.join(" ").replace(/\s+/g, " ").trim();
+  }
+  function authorsOf(w) {
+    if (!w.authorships || !w.authorships.length) return "—";
+    var names = [];
+    for (var i = 0; i < Math.min(3, w.authorships.length); i++) names.push(w.authorships[i].author.display_name);
+    var s = names.join(", ");
+    if (w.authorships.length > 3) s += " et al.";
+    return s;
+  }
+  function pdfOf(w) {
+    if (w.best_oa_location && w.best_oa_location.pdf_url) return w.best_oa_location.pdf_url;
+    if (w.locations) {
+      for (var i = 0; i < w.locations.length; i++) {
+        var loc = w.locations[i];
+        if (loc && loc.pdf_url) return loc.pdf_url;
+      }
+    }
+    return null;
+  }
+  function landingOf(w) {
+    if (w.best_oa_location && w.best_oa_location.landing_page_url) return w.best_oa_location.landing_page_url;
+    if (w.primary_location && w.primary_location.landing_page_url) return w.primary_location.landing_page_url;
+    return w.doi || w.id;
+  }
+  function journalOf(w) {
+    if (w.primary_location && w.primary_location.source && w.primary_location.source.display_name) return w.primary_location.source.display_name;
+    return "";
+  }
+
+  /* ================= search ================= */
+  function doSearch(page) {
+    var q = $("q").value.trim();
+    if (!q) { status("Type a topic first — even a single word will do.", 3000); $("q").focus(); return; }
+    if (page < 1) page = 1;
+    var f = currentFilters();
+    state.query = q;
+    state.lastFilters = f;
+    var url = buildUrl(page, f);
+    $("results").innerHTML = "";
+    $("pager").innerHTML = "";
+    $("stats").innerHTML = "";
+    $("suggest").innerHTML = "";
+    $("errBox").className = "";
+    status("Searching the stacks…");
+    var t0 = Date.now();
+    fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+      state.ms = Date.now() - t0;
+      if (data.error) { showError(data); status(null); return; }
+      state.page = page;
+      state.count = data.meta ? data.meta.count : 0;
+      renderResults(data);
+      status(null);
+    }).catch(function (err) {
+      showError({ error: "network", message: String(err && err.message || err) });
+      status(null);
+    });
+  }
+
+  function showError(data) {
+    var msg, hint;
+    var m = String(data && data.message || data && data.error || "");
+    if (/rate limit|budget/i.test(m)) {
+      msg = "The library index is very busy right now (shared capacity for anonymous users).";
+      hint = "Wait a minute and search again — or put a free personal OpenAlex key in ⚙ Settings, which gives you your own capacity. " +
+             "You can request a free key at openalex.org (they email it to you).";
+    } else if (/query parameters|filter|invalid/i.test(m)) {
+      msg = "One of the filters was not understood by the index.";
+      hint = "Try simplifying: clear the From-year box or switch Language back to 'Any language'.";
+    } else {
+      msg = "Something went wrong reaching the library index.";
+      hint = "Check your connection and try again.";
+    }
+    $("errBox").innerHTML =
+      "<b>⌛ " + esc(msg) + "</b><br><span style='font-size:13px'>" + esc(hint) + "</span>" +
+      "<br><br><a href='#' id='retryLink'>⟳ Try the search again</a>";
+    $("errBox").className = "on";
+    var rl = $("retryLink");
+    if (rl) rl.onclick = function (e) { e.preventDefault(); doSearch(state.page || 1); };
+  }
+
+  /* ================= render ================= */
+  function renderResults(data) {
+    var res = data.results || [];
+    var f = state.lastFilters;
+    var first = (state.page - 1) * PER_PAGE + 1;
+    var shown = first + "–" + (first + res.length - 1);
+    $("stats").innerHTML = "About <b>" + fmt(state.count) + "</b> results (" + (state.ms / 1000).toFixed(2) + " seconds) — articles " + shown +
+      (f && f.oaOnly ? " · showing <b>free full text only</b>" : "") +
+      (f && f.lang ? " · " + esc(LANG_NAMES[f.lang] || f.lang) + " only" : "");
+
+    renderSuggestions(f);
+
+    if (!res.length) {
+      $("results").innerHTML = "<div class='result'><h3>No articles found.</h3>" +
+        "<p class='snippet'>Try fewer words, switch Language to <i>Any language</i>, untick <i>Journal articles only</i>, or lower the From-year.</p></div>";
+      return;
+    }
+
+    var html = "";
+    for (var i = 0; i < res.length; i++) {
+      var w = res[i];
+      var id = String(w.id || "");
+      var title = w.display_name || "(untitled)";
+      var link = w.doi || landingOf(w);
+      var pdf = pdfOf(w);
+      var lang = w.language ? (LANG_NAMES[w.language] || w.language) : "";
+      var jr = journalOf(w);
+      var authors = authorsOf(w);
+      var abs = abstractOf(w);
+      var absShort = abs.length > 240 ? abs.slice(0, 240) + "…" : abs;
+      var isOA = w.open_access && w.open_access.is_oa;
+      var type = w.type || "";
+      var item = {
+        id: id, title: title, authors: authors, journal: jr, year: w.publication_year,
+        lang: lang, doi: w.doi || "", pdf: pdf || "", landing: landingOf(w), oa: !!isOA
+      };
+      html += "<div class='result' id='r" + i + "'>";
+      html += "<h3><a href='" + esc(link) + "' target='_blank' rel='noopener'>" + esc(title) + "</a></h3>";
+      html += "<div class='url'>" + esc((jr ? jr + " · " : "") + (w.publication_year || "") + (lang ? " · " + lang : "") + " · cited by " + fmt(w.cited_by_count || 0)) + "</div>";
+      html += "<div class='cite'>" + esc(authors) + (jr ? " — <i>" + esc(jr) + "</i>" : "") + (type && type !== "article" ? " · <span class='badge'>" + esc(type) + "</span>" : "") + " ";
+      html += isOA ? "<span class='badge oa'>🔓 open access</span>" : "<span class='badge closed'>🔒 paywalled</span>";
+      html += "</div>";
+      if (absShort) html += "<p class='snippet'>" + esc(absShort) + (abs.length > 240 ? "<span class='snippet more'>" + esc(abs.slice(240)) + "</span>" : "") + "</p>";
+      if (abs.length > 240) html += "<div class='actions'><a href='#' data-more='" + i + "'>▾ more</a></div>";
+      html += "<div class='actions'>";
+      if (pdf) html += "<a href='" + esc(pdf) + "' target='_blank' rel='noopener' title='Open the free PDF'>⤓ PDF</a>";
+      html += "<button class='linklike' data-tr='" + i + "' title='Read this article in English via Google Translate'>🌐 Translate</button>";
+      html += "<a href='" + esc(w.doi ? "https://doi.org/" + w.doi.replace("https://doi.org/", "") : landingOf(w)) + "' target='_blank' rel='noopener'>↗ publisher page</a>";
+      html += "</div>";
+      html += "<div class='pickline'><label><input type='checkbox' class='selbox' data-selid='" + esc(id) + "'" + (basket[id] ? " checked" : "") + "> keep for my reading list</label></div>";
+      html += "<input type='hidden' data-item='" + esc(JSON.stringify(item)) + "'>";
+      html += "</div>";
+    }
+    $("results").innerHTML = html;
+
+    var mores = document.querySelectorAll("a[data-more]");
+    for (var a = 0; a < mores.length; a++) mores[a].onclick = function (e) {
+      e.preventDefault();
+      var idx = this.getAttribute("data-more");
+      var row = $("r" + idx);
+      if (row) row.className = row.className === "result" ? "result open" : "result";
+      this.textContent = row && row.className === "result open" ? "▴ less" : "▾ more";
+    };
+    var trs = document.querySelectorAll("button[data-tr]");
+    for (var b = 0; b < trs.length; b++) trs[b].onclick = function () {
+      var idx = this.getAttribute("data-tr");
+      var w = res[idx];
+      var target = landingOf(w);
+      if (target && w.doi) target = w.doi;
+      if (target && /^https?:/.test(target)) {
+        window.open("https://translate.google.com/translate?sl=auto&tl=en&u=" + encodeURIComponent(target), "_blank", "noopener");
+        status("Opening an English translation of the page — if Google shows a redirect screen, click its link once.", 4200);
+      } else {
+        window.open("https://translate.google.com/?op=docs", "_blank", "noopener");
+        status("This article is a PDF without a web page: download it, then use 'Documents' on the page that opened to get a translated copy.", 6500);
+      }
+    };
+    var cbs = document.querySelectorAll("input[data-selid]");
+    for (var c = 0; c < cbs.length; c++) cbs[c].onchange = function () {
+      var id = this.getAttribute("data-selid");
+      var row = this.closest ? this.closest(".result") : null;
+      var payload = row ? row.querySelector("input[data-item]") : null;
+      var item = null;
+      if (payload) { try { item = JSON.parse(payload.getAttribute("data-item")); } catch (e) {} }
+      if (item) toggleSelect(id, item);
+      else this.checked = false;
+    };
+
+    renderPager();
+    renderBasket();
+  }
+
+  function renderSuggestions(f) {
+    if (!f || !f.lang || !GLOSS_LANGS[f.lang]) { $("suggest").innerHTML = ""; return; }
+    var q = state.query.toLowerCase();
+    var hits = [];
+    for (var key in GLOSS) {
+      if (!Object.prototype.hasOwnProperty.call(GLOSS, key)) continue;
+      if (q.indexOf(key) !== -1) hits.push(key);
+    }
+    if (!hits.length) return;
+    hits.sort(function (a, b) { return b.length - a.length; });
+    hits = hits.slice(0, 3);
+    var label = LANG_LABEL[f.lang] || f.lang;
+    var html = "<span class='lab'>Searching " + esc(label) + " literature? Try the " + esc(label) + " term: </span>";
+    for (var i = 0; i < hits.length; i++) {
+      var t = GLOSS[hits[i]][f.lang];
+      html += "<a href='#' data-term='" + esc(t) + "'>«" + esc(t) + "»</a>" + (i < hits.length - 1 ? " · " : "");
+    }
+    $("suggest").innerHTML = html;
+    var links = $("suggest").querySelectorAll("a[data-term]");
+    for (var a = 0; a < links.length; a++) links[a].onclick = function (e) {
+      e.preventDefault();
+      $("q").value = this.getAttribute("data-term");
+      doSearch(1);
+    };
+  }
+  var GLOSS_LANGS = { fr: 1, de: 1, ru: 1, zh: 1 };
+
+  function renderPager() {
+    var pages = Math.min(MAX_PAGES, Math.ceil(state.count / PER_PAGE));
+    if (pages <= 1) { $("pager").innerHTML = ""; return; }
+    var html = "";
+    if (state.page > 1) html += "<a href='#' data-p='" + (state.page - 1) + "'>« previous</a>";
+    var start = Math.max(1, state.page - 4);
+    var end = Math.min(pages, start + 8);
+    for (var p = start; p <= end; p++) {
+      if (p === state.page) html += "<span class='cur'>" + p + "</span>";
+      else html += "<a href='#' data-p='" + p + "'>" + p + "</a>";
+    }
+    if (state.page < pages) html += "<a href='#' data-p='" + (state.page + 1) + "'>next »</a>";
+    $("pager").innerHTML = html;
+    var links = $("pager").querySelectorAll("a[data-p]");
+    for (var i = 0; i < links.length; i++) links[i].onclick = function (e) {
+      e.preventDefault();
+      doSearch(parseInt(this.getAttribute("data-p"), 10));
+      window.scrollTo(0, 0);
+    };
+  }
+
+  /* ================= email flows ================= */
+  function listText() {
+    var lines = [];
+    lines.push("IR READING ROOM — reading list");
+    lines.push('Topic: "' + state.query + '"' + (state.lastFilters && state.lastFilters.lang ? " · " + (LANG_NAMES[state.lastFilters.lang] || state.lastFilters.lang) : ""));
+    lines.push("Generated: " + new Date().toLocaleString());
+    lines.push("");
+    var items = basketItems();
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      lines.push((i + 1) + ". " + it.title);
+      lines.push("    " + it.authors + (it.journal ? " · " + it.journal : "") + " · " + (it.year || "") + (it.lang ? " · " + it.lang : ""));
+      if (it.doi) lines.push("    Link: " + it.doi);
+      if (it.pdf) lines.push("    Free PDF: " + it.pdf);
+      if (!it.pdf && it.landing) lines.push("    Page: " + it.landing);
+      lines.push("");
+    }
+    lines.push("— collected with The IR Reading Room");
+    return lines.join("\n");
+  }
+  function mailtoDraft() {
+    var items = basketItems();
+    if (!items.length) { status("Tick 'keep for my reading list' on a few articles first.", 3000); return; }
+    var subject = "IR reading list — " + state.query + " (" + items.length + " article" + (items.length > 1 ? "s" : "") + ")";
+    var to = settings.email || "";
+    var url = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(listText());
+    window.location.href = url;
+    status("Opening your mail app" + (to ? " — addressed to " + to : "") + "…", 3000);
+  }
+  function downloadSelection() {
+    var items = basketItems();
+    if (!items.length) { status("Tick 'keep for my reading list' on a few articles first.", 3000); return; }
+    var payload = {
+      _about: "The IR Reading Room — article selection. Attach this file in your Vibe chat and ask: 'fetch these articles and email them to me as PDFs'. Free/open-access PDFs can be attached; paywalled ones will be linked.",
+      generated: new Date().toISOString(),
+      topic: state.query,
+      filters: state.lastFilters,
+      delivery_email: settings.email || "(ask me for my email)",
+      items: items
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ir-reading-list.json";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+    status("Downloaded — attach ir-reading-list.json in your Vibe chat and ask for the PDFs by email.", 6000);
+  }
+  function copyList() {
+    var items = basketItems();
+    if (!items.length) { status("Tick 'keep for my reading list' on a few articles first.", 3000); return; }
+    $("copyArea").value = listText();
+    $("copyModal").className = "on";
+    $("copyArea").focus();
+    $("copyArea").select();
+    try { if (navigator.clipboard) navigator.clipboard.writeText(listText()); } catch (e) {}
+  }
+
+  /* ================= wire-up ================= */
+  function init() {
+    loadSettings();
+    loadBasket();
+    var d = new Date();
+    var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    $("dateline").textContent = days[d.getDay()] + ", " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
+
+    $("searchBtn").onclick = function () { doSearch(1); };
+    $("q").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); doSearch(1); }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "/" && document.activeElement !== $("q")) { e.preventDefault(); $("q").focus(); }
+    });
+
+    var chips = $("chips").querySelectorAll("a[data-q]");
+    for (var i = 0; i < chips.length; i++) chips[i].onclick = function (e) {
+      e.preventDefault();
+      $("q").value = this.getAttribute("data-q");
+      doSearch(1);
+    };
+
+    $("settingsToggle").onclick = function (e) {
+      e.preventDefault();
+      $("settingsBox").className = $("settingsBox").className === "on" ? "" : "on";
+    };
+    $("saveSettings").onclick = saveSettings;
+
+    $("vibeBtn").onclick = downloadSelection;
+    $("mailtoBtn").onclick = mailtoDraft;
+    $("copyBtn").onclick = copyList;
+    $("copyClose").onclick = function () { $("copyModal").className = ""; };
+    $("clearBtn").onclick = function () {
+      basket = {};
+      persistBasket();
+      status("Reading list cleared.", 2000);
+    };
+
+    if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+      try {
+        navigator.serviceWorker.register("sw.js").then(function () {}, function () {});
+      } catch (e) {}
+    }
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+</body>
+</html>
